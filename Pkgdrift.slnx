@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Pkgdrift/Pkgdrift.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Pkgdrift.Tests/Pkgdrift.Tests.csproj" />
+  </Folder>
+</Solution>
