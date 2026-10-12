@@ -35,10 +35,10 @@ The usage examples below write `pkgdrift` for either form.
 ## Usage
 
 ```
-pkgdrift [--format text|json] [--disable RULE]... DIR
+pkgdrift [--format text|json] [--disable RULE]... [--ignore DIR]... DIR
 ```
 
-Scan recursively for `.csproj` files. The scanner ignores `bin`, `obj`, `node_modules`, and `.git` directories and does not follow directory symbolic links. Paths in reports are relative to the scan directory.
+Scan recursively for `.csproj` files. The scanner ignores `bin`, `obj`, `node_modules`, and `.git` directories, plus any directory named by `--ignore`, matched by name at any depth and ignoring case, and does not follow directory symbolic links. Paths in reports are relative to the scan directory.
 
 Examples:
 
@@ -46,6 +46,7 @@ Examples:
 pkgdrift .
 pkgdrift --format json ./src
 pkgdrift --disable PD005 --disable PD004 .
+pkgdrift --ignore samples --ignore legacy .
 ```
 
 ## Rules
@@ -59,6 +60,22 @@ pkgdrift --disable PD005 --disable PD004 .
 | PD005 | A prerelease version matching the numeric version and hyphenated suffix pattern. |
 
 Disable rules by repeating `--disable RULE`. Rule IDs are case-sensitive; disabling a rule hides its findings but does not change version baselines.
+
+## Ignoring directories
+
+`--ignore NAME` skips every directory called NAME (any depth, case-insensitive) in addition to the built-in ones, so sample or vendored projects do not produce findings; unlike `--disable`, real projects are still checked by every rule.
+
+For the app project and three Serilog 2.0.0 projects under `samples/demo`, `src/samples`, and `vendor/Samples`, the default scan prints six finding lines and this summary:
+
+```text
+samples/demo/demo.csproj:1: PD004 no TargetFramework or TargetFrameworks
+samples/demo/demo.csproj:3: PD001 Serilog 2.0.0 differs from 3.1.0 in app/app.csproj
+src/samples/inner.csproj:1: PD004 no TargetFramework or TargetFrameworks
+src/samples/inner.csproj:3: PD001 Serilog 2.0.0 differs from 3.1.0 in app/app.csproj
+vendor/Samples/vend.csproj:1: PD004 no TargetFramework or TargetFrameworks
+vendor/Samples/vend.csproj:3: PD001 Serilog 2.0.0 differs from 3.1.0 in app/app.csproj
+6 problems in 3 projects
+```
 
 ## Example
 
@@ -118,7 +135,7 @@ For the example projects above, the output is this single line (followed by a li
 | --- | --- |
 | 0 | Scan completed with no findings. |
 | 1 | Findings were reported. |
-| 2 | Invalid arguments, missing or invalid scan directory, unknown rule, or malformed project XML. |
+| 2 | Invalid arguments, missing or invalid scan directory, unknown rule, invalid `--ignore` value, or malformed project XML. |
 
 ## Development
 
@@ -128,7 +145,6 @@ Run the build, formatting check, and test suite from the repository root:
 dotnet build
 dotnet format --verify-no-changes
 dotnet test
-``
 ```
 
 ## License

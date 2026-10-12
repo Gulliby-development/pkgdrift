@@ -26,7 +26,12 @@ public sealed class ProjectScanner
     {
         public string DisplayPath { get; } = path;
     }
-    static readonly HashSet<string> Skipped = new(StringComparer.OrdinalIgnoreCase) { "bin", "obj", "node_modules", ".git" };
+    readonly HashSet<string> skipped;
+    public ProjectScanner(IEnumerable<string>? ignored = null)
+    {
+        skipped = new HashSet<string>(new[] { "bin", "obj", "node_modules", ".git" }, StringComparer.OrdinalIgnoreCase);
+        if (ignored is not null) skipped.UnionWith(ignored);
+    }
     public IReadOnlyList<ProjectInfo> Scan(string root)
     {
         var files = Enumerate(root).Where(f => string.Equals(Path.GetExtension(f), ".csproj", StringComparison.OrdinalIgnoreCase))
@@ -56,7 +61,7 @@ public sealed class ProjectScanner
         return result;
     }
     public bool HasDirectoryBuildProps(string root) => Enumerate(root).Any(f => string.Equals(Path.GetFileName(f), "Directory.Build.props", StringComparison.OrdinalIgnoreCase));
-    static IEnumerable<string> Enumerate(string root)
+    IEnumerable<string> Enumerate(string root)
     {
         var pending = new Stack<string>();
         pending.Push(root);
@@ -66,7 +71,7 @@ public sealed class ProjectScanner
             foreach (var file in Directory.EnumerateFiles(dir)) yield return file;
             foreach (var child in Directory.EnumerateDirectories(dir))
             {
-                if (Skipped.Contains(Path.GetFileName(child))) continue;
+                if (skipped.Contains(Path.GetFileName(child))) continue;
                 if ((File.GetAttributes(child) & FileAttributes.ReparsePoint) != 0) continue;
                 pending.Push(child);
             }
@@ -113,6 +118,7 @@ public static class Program
     {
         string format = "text";
         var disabled = new List<string>();
+        var ignored = new List<string>();
         var positional = new List<string>();
         for (var i = 0; i < args.Length; i++)
         {
@@ -128,6 +134,13 @@ public static class Program
                 if (++i >= args.Length || args[i].StartsWith("--", StringComparison.Ordinal)) return Error("pkgdrift: missing value for --disable");
                 disabled.Add(args[i]);
             }
+            else if (arg == "--ignore")
+            {
+                if (++i >= args.Length || args[i].StartsWith("--", StringComparison.Ordinal)) return Error("pkgdrift: missing value for --ignore");
+                var value = args[i];
+                if (value.Length == 0 || value is "." or ".." || value.Contains('/') || value.Contains('\\')) return Error($"pkgdrift: invalid --ignore value \"{value}\"");
+                ignored.Add(value);
+            }
             else if (arg.StartsWith("--", StringComparison.Ordinal)) return Error($"pkgdrift: unknown option \"{arg}\"");
             else positional.Add(arg);
         }
@@ -140,7 +153,7 @@ public static class Program
         Report report;
         try
         {
-            var scanner = new ProjectScanner();
+            var scanner = new ProjectScanner(ignored);
             var projects = scanner.Scan(dir);
             report = Rules.Create(projects, scanner.HasDirectoryBuildProps(dir), disabled);
         }
