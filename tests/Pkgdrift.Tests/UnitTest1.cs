@@ -101,6 +101,8 @@ public sealed class PkgdriftTests
             (new[] { "--format", "xml", tree.Root }, "pkgdrift: --format must be text or json"),
             (new[] { "--disable" }, "pkgdrift: missing value for --disable"),
             (new[] { "--disable", "pd001", tree.Root }, "pkgdrift: unknown rule \"pd001\""),
+            (new[] { "--only" }, "pkgdrift: missing value for --only"),
+            (new[] { "--only", "pd001", tree.Root }, "pkgdrift: unknown rule \"pd001\""),
             (new[] { Path.Combine(tree.Root, "missing") }, $"pkgdrift: {Path.Combine(tree.Root, "missing")}: directory not found"),
             (new[] { tree.Write("not-directory", "file") }, $"pkgdrift: {tree.Write("not-directory", "file")}: directory not found")
         };

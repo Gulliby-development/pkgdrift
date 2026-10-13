@@ -35,7 +35,7 @@ The usage examples below write `pkgdrift` for either form.
 ## Usage
 
 ```
-pkgdrift [--format text|json] [--disable RULE]... [--ignore DIR]... DIR
+pkgdrift [--format text|json] [--disable RULE]... [--only RULE]... [--ignore DIR]... DIR
 ```
 
 Scan recursively for `.csproj` files. The scanner ignores `bin`, `obj`, `node_modules`, and `.git` directories, plus any directory named by `--ignore`, matched by name at any depth and ignoring case, and does not follow directory symbolic links. Paths in reports are relative to the scan directory.
@@ -46,6 +46,7 @@ Examples:
 pkgdrift .
 pkgdrift --format json ./src
 pkgdrift --disable PD005 --disable PD004 .
+pkgdrift --only PD001 --only PD005 .
 pkgdrift --ignore samples --ignore legacy .
 ```
 
@@ -60,6 +61,27 @@ pkgdrift --ignore samples --ignore legacy .
 | PD005 | A prerelease version matching the numeric version and hyphenated suffix pattern. |
 
 Disable rules by repeating `--disable RULE`. Rule IDs are case-sensitive; disabling a rule hides its findings but does not change version baselines.
+
+`--only RULE` keeps only the named rules and may be repeated or combined with `--disable`. A rule named by both options is disabled. Rule IDs are case-sensitive, and an unknown rule ID is an error for either option.
+
+## Reporting only some rules
+
+For the `app/app.csproj` and `lib/lib.csproj` projects used in the Example section below, run:
+
+```sh
+pkgdrift --only PD001 --only PD005 .
+```
+
+The output is:
+
+```text
+lib/lib.csproj:3: PD001 Newtonsoft.Json 12.0.3 differs from 13.0.1 in app/app.csproj
+lib/lib.csproj:4: PD001 Serilog 3.1.0-beta.2 differs from * in app/app.csproj
+lib/lib.csproj:4: PD005 prerelease version 3.1.0-beta.2 of Serilog
+3 problems in 1 project
+```
+
+PD001 version baselines still use every reference in every project, even when only selected rules are reported.
 
 ## Ignoring directories
 
@@ -135,7 +157,7 @@ For the example projects above, the output is this single line (followed by a li
 | --- | --- |
 | 0 | Scan completed with no findings. |
 | 1 | Findings were reported. |
-| 2 | Invalid arguments, missing or invalid scan directory, unknown rule, invalid `--ignore` value, or malformed project XML. |
+| 2 | Invalid arguments, missing or invalid scan directory, unknown `--disable` or `--only` rule, invalid `--ignore` value, or malformed project XML. |
 
 ## Development
 
