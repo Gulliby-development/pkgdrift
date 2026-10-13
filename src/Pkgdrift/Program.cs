@@ -134,7 +134,7 @@ public static class Program
             {
                 if (++i >= args.Length) return Error("pkgdrift: missing value for --format");
                 format = args[i];
-                if (format is not ("text" or "json")) return Error("pkgdrift: --format must be text or json");
+                if (format is not ("text" or "json" or "markdown")) return Error("pkgdrift: --format must be text, json or markdown");
             }
             else if (arg == "--disable")
             {
@@ -181,6 +181,7 @@ public static class Program
             stdout.Write(JsonSerializer.Serialize(new { projects = report.Projects, findings = report.Findings.Select(f => new { path = f.Path, line = f.Line, rule = f.Rule, message = f.Message }), problems = report.Problems }, options));
             stdout.Write('\n');
         }
+        else if (format == "markdown") stdout.Write(MarkdownReport.Render(report));
         else if (report.Problems == 0) stdout.WriteLine("ok");
         else
         {
