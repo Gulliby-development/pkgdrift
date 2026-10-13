@@ -35,7 +35,7 @@ The usage examples below write `pkgdrift` for either form.
 ## Usage
 
 ```
-pkgdrift [--format text|json] [--disable RULE]... [--only RULE]... [--ignore DIR]... DIR
+pkgdrift [--format text|json|markdown] [--disable RULE]... [--only RULE]... [--ignore DIR]... DIR
 ```
 
 Scan recursively for `.csproj` files. The scanner ignores `bin`, `obj`, `node_modules`, and `.git` directories, plus any directory named by `--ignore`, matched by name at any depth and ignoring case, and does not follow directory symbolic links. Paths in reports are relative to the scan directory.
@@ -45,6 +45,7 @@ Examples:
 ```sh
 pkgdrift .
 pkgdrift --format json ./src
+pkgdrift --format markdown .
 pkgdrift --disable PD005 --disable PD004 .
 pkgdrift --only PD001 --only PD005 .
 pkgdrift --ignore samples --ignore legacy .
@@ -150,6 +151,30 @@ For the example projects above, the output is this single line (followed by a li
 ```json
 {"projects":2,"findings":[{"path":"app/app.csproj","line":7,"rule":"PD002","message":"floating version * of Serilog"},{"path":"lib/lib.csproj","line":1,"rule":"PD004","message":"no TargetFramework or TargetFrameworks"},{"path":"lib/lib.csproj","line":3,"rule":"PD001","message":"Newtonsoft.Json 12.0.3 differs from 13.0.1 in app/app.csproj"},{"path":"lib/lib.csproj","line":4,"rule":"PD001","message":"Serilog 3.1.0-beta.2 differs from * in app/app.csproj"},{"path":"lib/lib.csproj","line":4,"rule":"PD005","message":"prerelease version 3.1.0-beta.2 of Serilog"}],"problems":5}
 ```
+
+## Markdown output
+
+Use `--format markdown` to render findings as a Markdown table:
+
+```sh
+pkgdrift --format markdown .
+```
+
+For the example projects above, the output is:
+
+```markdown
+| File | Line | Rule | Message |
+| --- | ---: | --- | --- |
+| app/app.csproj | 7 | PD002 | floating version \* of Serilog |
+| lib/lib.csproj | 1 | PD004 | no TargetFramework or TargetFrameworks |
+| lib/lib.csproj | 3 | PD001 | Newtonsoft.Json 12.0.3 differs from 13.0.1 in app/app.csproj |
+| lib/lib.csproj | 4 | PD001 | Serilog 3.1.0-beta.2 differs from \* in app/app.csproj |
+| lib/lib.csproj | 4 | PD005 | prerelease version 3.1.0-beta.2 of Serilog |
+
+5 problems in 2 projects
+```
+
+Rows follow text output order. In File and Message cells, `\`, `|`, `*`, `_`, backtick, `<`, `>`, `[` and `]` are escaped with a backslash; CR and LF become spaces. With no findings, the output is `ok`. Markdown output uses LF line endings on every operating system. Exit codes are the same as for the other formats: 0 for no findings, 1 for findings, and 2 for errors.
 
 ## Exit codes
 
