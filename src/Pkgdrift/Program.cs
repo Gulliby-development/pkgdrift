@@ -82,10 +82,16 @@ public sealed class ProjectScanner
 
 public static class Rules
 {
+    public static readonly string[] Ids = ["PD001", "PD002", "PD003", "PD004", "PD005"];
     static readonly Regex Prerelease = new(@"^[0-9]+(\.[0-9]+){0,3}-[0-9A-Za-z.-]+$", RegexOptions.CultureInvariant);
-    public static Report Create(IReadOnlyList<ProjectInfo> projects, bool hasDirectoryBuildProps = false, IEnumerable<string>? disabled = null)
+    public static Report Create(IReadOnlyList<ProjectInfo> projects, bool hasDirectoryBuildProps = false, IEnumerable<string>? disabled = null, IEnumerable<string>? only = null)
     {
         var off = new HashSet<string>(disabled ?? Array.Empty<string>(), StringComparer.Ordinal);
+        if (only is not null)
+        {
+            var included = new HashSet<string>(only, StringComparer.Ordinal);
+            if (included.Count > 0) off.UnionWith(Ids.Where(id => !included.Contains(id)));
+        }
         var findings = new List<Finding>();
         var baselines = new Dictionary<string, PackageReferenceInfo>(StringComparer.OrdinalIgnoreCase);
         foreach (var reference in projects.SelectMany(p => p.References).Where(r => r.Version is not null).OrderBy(r => r.Path, StringComparer.Ordinal).ThenBy(r => r.Line))
@@ -118,6 +124,7 @@ public static class Program
     {
         string format = "text";
         var disabled = new List<string>();
+        var only = new List<string>();
         var ignored = new List<string>();
         var positional = new List<string>();
         for (var i = 0; i < args.Length; i++)
@@ -134,6 +141,11 @@ public static class Program
                 if (++i >= args.Length || args[i].StartsWith("--", StringComparison.Ordinal)) return Error("pkgdrift: missing value for --disable");
                 disabled.Add(args[i]);
             }
+            else if (arg == "--only")
+            {
+                if (++i >= args.Length || args[i].StartsWith("--", StringComparison.Ordinal)) return Error("pkgdrift: missing value for --only");
+                only.Add(args[i]);
+            }
             else if (arg == "--ignore")
             {
                 if (++i >= args.Length || args[i].StartsWith("--", StringComparison.Ordinal)) return Error("pkgdrift: missing value for --ignore");
@@ -147,7 +159,9 @@ public static class Program
         if (positional.Count == 0) return Error("pkgdrift: directory required");
         if (positional.Count != 1) return Error("pkgdrift: exactly one directory required");
         foreach (var id in disabled)
-            if (id is not ("PD001" or "PD002" or "PD003" or "PD004" or "PD005")) return Error($"pkgdrift: unknown rule \"{id}\"");
+            if (!Rules.Ids.Contains(id, StringComparer.Ordinal)) return Error($"pkgdrift: unknown rule \"{id}\"");
+        foreach (var id in only)
+            if (!Rules.Ids.Contains(id, StringComparer.Ordinal)) return Error($"pkgdrift: unknown rule \"{id}\"");
         var dir = positional[0];
         if (!Directory.Exists(dir)) return Error($"pkgdrift: {dir}: directory not found");
         Report report;
@@ -155,7 +169,7 @@ public static class Program
         {
             var scanner = new ProjectScanner(ignored);
             var projects = scanner.Scan(dir);
-            report = Rules.Create(projects, scanner.HasDirectoryBuildProps(dir), disabled);
+            report = Rules.Create(projects, scanner.HasDirectoryBuildProps(dir), disabled, only);
         }
         catch (ProjectScanner.InvalidProjectXmlException ex)
         {
