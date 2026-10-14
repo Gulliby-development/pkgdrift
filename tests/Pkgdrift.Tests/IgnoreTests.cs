@@ -77,7 +77,7 @@ public sealed class IgnoreTests
         while (root is not null && !File.Exists(Path.Combine(root.FullName, "Pkgdrift.slnx"))) root = root.Parent;
         Assert.NotNull(root);
         var readme = File.ReadAllText(Path.Combine(root!.FullName, "README.md"));
-        Assert.Contains("pkgdrift [--format text|json|markdown] [--disable RULE]... [--only RULE]... [--ignore DIR]... DIR", readme);
+        Assert.Contains("pkgdrift [--format text|json|markdown] [--disable RULE]... [--only RULE]... [--ignore DIR]... [--ignore-package NAME]... DIR", readme);
         Assert.Contains("## Ignoring directories", readme);
         Assert.Contains("pkgdrift --ignore samples --ignore legacy .", readme);
     }

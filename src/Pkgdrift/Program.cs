@@ -84,8 +84,13 @@ public static class Rules
 {
     public static readonly string[] Ids = ["PD001", "PD002", "PD003", "PD004", "PD005"];
     static readonly Regex Prerelease = new(@"^[0-9]+(\.[0-9]+){0,3}-[0-9A-Za-z.-]+$", RegexOptions.CultureInvariant);
-    public static Report Create(IReadOnlyList<ProjectInfo> projects, bool hasDirectoryBuildProps = false, IEnumerable<string>? disabled = null, IEnumerable<string>? only = null)
+    public static Report Create(IReadOnlyList<ProjectInfo> projects, bool hasDirectoryBuildProps = false, IEnumerable<string>? disabled = null, IEnumerable<string>? only = null, IEnumerable<string>? ignoredPackages = null)
     {
+        var ignored = new HashSet<string>(ignoredPackages ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+        var filteredProjects = projects.Select(project => project with
+        {
+            References = project.References.Where(reference => !ignored.Contains(reference.Package)).ToArray()
+        }).ToArray();
         var off = new HashSet<string>(disabled ?? Array.Empty<string>(), StringComparer.Ordinal);
         if (only is not null)
         {
@@ -94,9 +99,9 @@ public static class Rules
         }
         var findings = new List<Finding>();
         var baselines = new Dictionary<string, PackageReferenceInfo>(StringComparer.OrdinalIgnoreCase);
-        foreach (var reference in projects.SelectMany(p => p.References).Where(r => r.Version is not null).OrderBy(r => r.Path, StringComparer.Ordinal).ThenBy(r => r.Line))
+        foreach (var reference in filteredProjects.SelectMany(p => p.References).Where(r => r.Version is not null).OrderBy(r => r.Path, StringComparer.Ordinal).ThenBy(r => r.Line))
             if (!baselines.ContainsKey(reference.Package)) baselines.Add(reference.Package, reference);
-        foreach (var project in projects)
+        foreach (var project in filteredProjects)
         {
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var reference in project.References)
@@ -113,7 +118,7 @@ public static class Rules
             if (!hasDirectoryBuildProps && !project.HasTargetFramework && !off.Contains("PD004"))
                 findings.Add(new Finding(project.Path, project.Line, "PD004", "no TargetFramework or TargetFrameworks"));
         }
-        return new Report(projects.Count, findings);
+        return new Report(filteredProjects.Length, findings);
     }
 }
 
@@ -126,6 +131,7 @@ public static class Program
         var disabled = new List<string>();
         var only = new List<string>();
         var ignored = new List<string>();
+        var ignoredPackages = new List<string>();
         var positional = new List<string>();
         for (var i = 0; i < args.Length; i++)
         {
@@ -153,6 +159,13 @@ public static class Program
                 if (value.Length == 0 || value is "." or ".." || value.Contains('/') || value.Contains('\\')) return Error($"pkgdrift: invalid --ignore value \"{value}\"");
                 ignored.Add(value);
             }
+            else if (arg == "--ignore-package")
+            {
+                if (++i >= args.Length || args[i].StartsWith("--", StringComparison.Ordinal)) return Error("pkgdrift: missing value for --ignore-package");
+                var value = args[i];
+                if (string.IsNullOrWhiteSpace(value)) return Error($"pkgdrift: invalid --ignore-package value \"{value}\"");
+                ignoredPackages.Add(value);
+            }
             else if (arg.StartsWith("--", StringComparison.Ordinal)) return Error($"pkgdrift: unknown option \"{arg}\"");
             else positional.Add(arg);
         }
@@ -169,7 +182,7 @@ public static class Program
         {
             var scanner = new ProjectScanner(ignored);
             var projects = scanner.Scan(dir);
-            report = Rules.Create(projects, scanner.HasDirectoryBuildProps(dir), disabled, only);
+            report = Rules.Create(projects, scanner.HasDirectoryBuildProps(dir), disabled, only, ignoredPackages);
         }
         catch (ProjectScanner.InvalidProjectXmlException ex)
         {

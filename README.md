@@ -35,7 +35,7 @@ The usage examples below write `pkgdrift` for either form.
 ## Usage
 
 ```
-pkgdrift [--format text|json|markdown] [--disable RULE]... [--only RULE]... [--ignore DIR]... DIR
+pkgdrift [--format text|json|markdown] [--disable RULE]... [--only RULE]... [--ignore DIR]... [--ignore-package NAME]... DIR
 ```
 
 Scan recursively for `.csproj` files. The scanner ignores `bin`, `obj`, `node_modules`, and `.git` directories, plus any directory named by `--ignore`, matched by name at any depth and ignoring case, and does not follow directory symbolic links. Paths in reports are relative to the scan directory.
@@ -49,6 +49,7 @@ pkgdrift --format markdown .
 pkgdrift --disable PD005 --disable PD004 .
 pkgdrift --only PD001 --only PD005 .
 pkgdrift --ignore samples --ignore legacy .
+pkgdrift --ignore-package Serilog .
 ```
 
 ## Rules
@@ -98,6 +99,24 @@ src/samples/inner.csproj:3: PD001 Serilog 2.0.0 differs from 3.1.0 in app/app.cs
 vendor/Samples/vend.csproj:1: PD004 no TargetFramework or TargetFrameworks
 vendor/Samples/vend.csproj:3: PD001 Serilog 2.0.0 differs from 3.1.0 in app/app.csproj
 6 problems in 3 projects
+```
+
+## Ignoring packages
+
+`--ignore-package NAME` removes every reference to the package NAME (compared without regard to case, like package names elsewhere) before any rule runs, so it produces no PD001, PD002, PD003 or PD005 finding and does not serve as a version baseline for the other projects. The option may be repeated. Projects, the project count and PD004 are not affected. A missing value (the last argument, or a next argument starting with `--`) or a value that is empty or only white space is an argument error with exit code 2.
+
+For the example projects in the Example section below, run:
+
+```sh
+pkgdrift --ignore-package serilog .
+```
+
+The output is:
+
+```text
+lib/lib.csproj:1: PD004 no TargetFramework or TargetFrameworks
+lib/lib.csproj:3: PD001 Newtonsoft.Json 12.0.3 differs from 13.0.1 in app/app.csproj
+2 problems in 1 project
 ```
 
 ## Example
