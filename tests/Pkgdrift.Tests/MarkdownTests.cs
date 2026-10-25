@@ -124,8 +124,8 @@ public sealed class MarkdownTests
         using var tree = new TempTree();
         var cases = new (string[] Args, string Error)[]
         {
-            (new[] { "--format", "xml", tree.Root }, "pkgdrift: --format must be text, json or markdown"),
-            (new[] { "--format", "Markdown", tree.Root }, "pkgdrift: --format must be text, json or markdown"),
+            (new[] { "--format", "xml", tree.Root }, "pkgdrift: --format must be text, json, markdown or github"),
+            (new[] { "--format", "Markdown", tree.Root }, "pkgdrift: --format must be text, json, markdown or github"),
             (new[] { "--format=markdown", tree.Root }, "pkgdrift: unknown option \"--format=markdown\""),
             (new[] { "--format" }, "pkgdrift: missing value for --format"),
             (new[] { "--format", "markdown", "--only", "PD009", tree.Root }, "pkgdrift: unknown rule \"PD009\"")
@@ -149,7 +149,7 @@ public sealed class MarkdownTests
 
         var readme = File.ReadAllText(Path.Combine(root!.FullName, "README.md"))
             .Replace("\r\n", "\n", StringComparison.Ordinal);
-        Assert.Contains("pkgdrift [--format text|json|markdown]", readme);
+        Assert.Contains("pkgdrift [--format text|json|markdown|github]", readme);
         Assert.Contains("## Markdown output\n", readme);
         Assert.Contains("pkgdrift --format markdown .", readme);
         Assert.Contains(
