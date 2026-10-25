@@ -98,7 +98,7 @@ public sealed class PkgdriftTests
             (new[] { tree.Root, tree.Root }, "pkgdrift: exactly one directory required"),
             (new[] { "--wat", tree.Root }, "pkgdrift: unknown option \"--wat\""),
             (new[] { "--format" }, "pkgdrift: missing value for --format"),
-            (new[] { "--format", "xml", tree.Root }, "pkgdrift: --format must be text, json or markdown"),
+            (new[] { "--format", "xml", tree.Root }, "pkgdrift: --format must be text, json, markdown or github"),
             (new[] { "--disable" }, "pkgdrift: missing value for --disable"),
             (new[] { "--disable", "pd001", tree.Root }, "pkgdrift: unknown rule \"pd001\""),
             (new[] { "--only" }, "pkgdrift: missing value for --only"),

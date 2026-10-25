@@ -35,7 +35,7 @@ The usage examples below write `pkgdrift` for either form.
 ## Usage
 
 ```
-pkgdrift [--format text|json|markdown] [--disable RULE]... [--only RULE]... [--ignore DIR]... [--ignore-package NAME]... DIR
+pkgdrift [--format text|json|markdown|github] [--disable RULE]... [--only RULE]... [--ignore DIR]... [--ignore-package NAME]... DIR
 ```
 
 Scan recursively for `.csproj` files. The scanner ignores `bin`, `obj`, `node_modules`, and `.git` directories, plus any directory named by `--ignore`, matched by name at any depth and ignoring case, and does not follow directory symbolic links. Paths in reports are relative to the scan directory.
@@ -46,6 +46,7 @@ Examples:
 pkgdrift .
 pkgdrift --format json ./src
 pkgdrift --format markdown .
+pkgdrift --format github .
 pkgdrift --disable PD005 --disable PD004 .
 pkgdrift --only PD001 --only PD005 .
 pkgdrift --ignore samples --ignore legacy .
@@ -194,6 +195,27 @@ For the example projects above, the output is:
 ```
 
 Rows follow text output order. In File and Message cells, `\`, `|`, `*`, `_`, backtick, `<`, `>`, `[` and `]` are escaped with a backslash; CR and LF become spaces. With no findings, the output is `ok`. Markdown output uses LF line endings on every operating system. Exit codes are the same as for the other formats: 0 for no findings, 1 for findings, and 2 for errors.
+
+## GitHub annotations
+
+Use `--format github` in a GitHub Actions step to turn findings into workflow commands, which the runner shows as annotations on the files. Run it from the repository root with `.` as the directory so that the paths match the repository files:
+
+```sh
+pkgdrift --format github .
+```
+
+For the example projects above, the output is:
+
+```text
+::warning file=app/app.csproj,line=7,title=PD002::floating version * of Serilog
+::error file=lib/lib.csproj,line=1,title=PD004::no TargetFramework or TargetFrameworks
+::error file=lib/lib.csproj,line=3,title=PD001::Newtonsoft.Json 12.0.3 differs from 13.0.1 in app/app.csproj
+::error file=lib/lib.csproj,line=4,title=PD001::Serilog 3.1.0-beta.2 differs from * in app/app.csproj
+::warning file=lib/lib.csproj,line=4,title=PD005::prerelease version 3.1.0-beta.2 of Serilog
+5 problems in 2 projects
+```
+
+There is one line per finding, in text output order. PD002 and PD005 are warnings; PD001, PD003 and PD004 are errors. In the message `%`, CR and LF are written as `%25`, `%0D` and `%0A`; in the file name the same three characters and also `:` and `,` are escaped, as `%3A` and `%2C`. With no findings, the output is `ok`. The last line of a report is the same summary as in text output. GitHub output uses LF line endings on every operating system, and the exit codes are the same as for the other formats.
 
 ## Exit codes
 

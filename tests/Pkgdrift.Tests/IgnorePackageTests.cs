@@ -13,7 +13,7 @@ public sealed class IgnorePackageTests
         Assert.NotNull(root);
 
         var readme = File.ReadAllText(Path.Combine(root!.FullName, "README.md")).Replace("\r\n", "\n", StringComparison.Ordinal);
-        Assert.Contains("pkgdrift [--format text|json|markdown] [--disable RULE]... [--only RULE]... [--ignore DIR]... [--ignore-package NAME]... DIR", readme);
+        Assert.Contains("pkgdrift [--format text|json|markdown|github] [--disable RULE]... [--only RULE]... [--ignore DIR]... [--ignore-package NAME]... DIR", readme);
         Assert.Contains("pkgdrift --ignore-package Serilog .", readme);
         var expectedSection = string.Join("\n", new[]
         {
