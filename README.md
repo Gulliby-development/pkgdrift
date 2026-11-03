@@ -35,7 +35,7 @@ The usage examples below write `pkgdrift` for either form.
 ## Usage
 
 ```
-pkgdrift [--format text|json|markdown|github] [--disable RULE]... [--only RULE]... [--ignore DIR]... [--ignore-package NAME]... DIR
+pkgdrift [--format text|json|markdown|github] [--summary] [--disable RULE]... [--only RULE]... [--ignore DIR]... [--ignore-package NAME]... DIR
 ```
 
 Scan recursively for `.csproj` files. The scanner ignores `bin`, `obj`, `node_modules`, and `.git` directories, plus any directory named by `--ignore`, matched by name at any depth and ignoring case, and does not follow directory symbolic links. Paths in reports are relative to the scan directory.
@@ -51,6 +51,7 @@ pkgdrift --disable PD005 --disable PD004 .
 pkgdrift --only PD001 --only PD005 .
 pkgdrift --ignore samples --ignore legacy .
 pkgdrift --ignore-package Serilog .
+pkgdrift --summary .
 ```
 
 ## Rules
@@ -85,6 +86,22 @@ lib/lib.csproj:4: PD005 prerelease version 3.1.0-beta.2 of Serilog
 ```
 
 PD001 version baselines still use every reference in every project, even when only selected rules are reported.
+
+## Summary only
+
+`--summary` prints only the last line of the text output: the `N problems in M projects` line, or `ok` when there are no findings. The exit code does not change. The option works only with the default text format; combined with `--format json`, `markdown` or `github` it is an argument error with exit code 2 (`pkgdrift: --summary works only with --format text`), reported after the directory-count check and before the rule checks.
+
+For the example projects in the Example section below, run:
+
+```sh
+pkgdrift --summary .
+```
+
+The output is:
+
+```text
+5 problems in 2 projects
+```
 
 ## Ignoring directories
 
