@@ -133,6 +133,7 @@ public static class Program
         var ignored = new List<string>();
         var ignoredPackages = new List<string>();
         var positional = new List<string>();
+        var summary = false;
         for (var i = 0; i < args.Length; i++)
         {
             var arg = args[i];
@@ -166,11 +167,13 @@ public static class Program
                 if (string.IsNullOrWhiteSpace(value)) return Error($"pkgdrift: invalid --ignore-package value \"{value}\"");
                 ignoredPackages.Add(value);
             }
+            else if (arg == "--summary") summary = true;
             else if (arg.StartsWith("--", StringComparison.Ordinal)) return Error($"pkgdrift: unknown option \"{arg}\"");
             else positional.Add(arg);
         }
         if (positional.Count == 0) return Error("pkgdrift: directory required");
         if (positional.Count != 1) return Error("pkgdrift: exactly one directory required");
+        if (summary && format != "text") return Error("pkgdrift: --summary works only with --format text");
         foreach (var id in disabled)
             if (!Rules.Ids.Contains(id, StringComparer.Ordinal)) return Error($"pkgdrift: unknown rule \"{id}\"");
         foreach (var id in only)
@@ -199,7 +202,8 @@ public static class Program
         else if (report.Problems == 0) stdout.WriteLine("ok");
         else
         {
-            foreach (var f in report.Findings) stdout.WriteLine($"{f.Path}:{f.Line}: {f.Rule} {f.Message}");
+            if (!summary)
+                foreach (var f in report.Findings) stdout.WriteLine($"{f.Path}:{f.Line}: {f.Rule} {f.Message}");
             var projectCount = report.Findings.Select(f => f.Path).Distinct(StringComparer.Ordinal).Count();
             stdout.WriteLine($"{report.Problems} problem{(report.Problems == 1 ? "" : "s")} in {projectCount} project{(projectCount == 1 ? "" : "s")}");
         }
